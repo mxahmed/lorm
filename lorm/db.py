@@ -6,7 +6,7 @@ import sys
 import logging
 import threading
 
-import mysql_pool
+from .mysql_pool import PoolManager
 
 __all__ = [
     'Struct',
@@ -214,7 +214,7 @@ class Hub:
     :param driver: MySQLdb or pymysql
     """
     def __init__(self, driver):
-        self.pool_manager = mysql_pool.PoolManager(driver)
+        self.pool_manager = PoolManager(driver)
         self.creators = {}
 
     def add_pool(self, alias, **connect_kwargs):

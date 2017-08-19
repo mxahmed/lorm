@@ -3,7 +3,7 @@
 import time
 import threading
 import logging
-import Queue
+import queue
 import types
 
 
@@ -29,7 +29,7 @@ class QueuePool:
         self.creator = creator
         self.timeout = timeout
         self.recycle = recycle
-        self.q = Queue.Queue(pool_size)
+        self.q = queue.Queue(pool_size)
         self.cset = set()  # 保证队列成员不重复
         self.overflow = -pool_size
         self._overflow_lock = threading.Lock()
@@ -83,7 +83,7 @@ class QueuePool:
                     #XXX: 此时连接是否还活着? 如果在排队期间断线了, 取出来查询的时候就会报
                     #(2006, MySQL server has gone away), 报错说明数据库确实出问题了.
                     return c
-        except Queue.Empty:
+        except queue.Empty:
             if self.overflow >= 0:
                 if not block:
                     return self.connect()
@@ -111,7 +111,7 @@ class QueuePool:
         try:
             self.cset.add(conn)
             self.q.put(conn, False)
-        except Queue.Full:
+        except queue.Full:
             logging.warning('QueuePool Full: %s' % self.q.qsize())
             self.close(conn)
 
@@ -123,12 +123,12 @@ class QueuePool:
 
     def clear(self):
         q = self.q
-        self.q = Queue.Queue(q.maxsize)
+        self.q = queue.Queue(q.maxsize)
         while 1:
             try:
                 c = q.get(False)
                 self.close(c)
-            except Queue.Empty:
+            except queue.Empty:
                 break
 
 
@@ -138,7 +138,7 @@ def im_close(conn):
 
 def try_reconnect(conn):
     """true if success"""
-    for i in xrange(MaxBadConnRetries):
+    for i in range(MaxBadConnRetries):
         try:
             conn.ping(True)
             return True
@@ -193,5 +193,5 @@ class PoolManager:
             return c
 
         key = (kw['host'], kw['port'], kw['user'], kw['db'])
-        pool = self.pools.setdefault(key, QueuePool(creator, pool_size=pool_size, recycle=recycle))
+        pool = self.pools.setdefault(key, queuePool(creator, pool_size=pool_size, recycle=recycle))
         return pool.connect()
